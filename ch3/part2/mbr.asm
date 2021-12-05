@@ -1,6 +1,5 @@
 .code16
 
-
 .include "boot.inc"
 
 movw %cs, %ax
@@ -42,7 +41,7 @@ movw $0x1, %cx
 
 call rd_disk_m_16
 
-jmp LOADER_BASE_ADDR
+jmp  LOADER_BASE_ADDR
 
 
 //功能：读取硬盘的n个扇区
@@ -54,6 +53,8 @@ rd_disk_m_16:
     movl %eax, %esi
     movw %cx, %di
 
+
+
 //端口0x1f2 给出读取的扇区数
 
     movw $0x1f2, %dx
@@ -64,13 +65,14 @@ rd_disk_m_16:
 
 //0-7位写入0x1f3端口
 
-    movw 0x1f3 %dx
+    movw $0x1f3, %dx
     outb %al, %dx
 
     movb $8, %cl
     shr %cl, %eax
     movw $0x1f4, %dx
     outb %al, %dx
+
 
 //8-15位写入0x1f4端口
 
@@ -79,20 +81,22 @@ rd_disk_m_16:
     movw $0x1f4, %dx
     out %al, %dx
 
+
+
 // 16-23
 
     shr %cl, %eax
     movw $0x1f5, %dx
-    out $al, %dx
+    outb %al, %dx
+
 
 // 24-27
 
-    shr $cl, %eax
+    shr %cl, %eax
     and $0x0f, %al
     or $0xe0, %al
     movw $0x1f6, %dx
     out %al, %dx
-
 
     movw $0x1f7, %dx
     movb $0x20, %al
@@ -102,7 +106,7 @@ not_ready:
     nop
     in %dx, %al
     and $0x88, %al
-    cmp %0x08, %al
+    cmp $0x8, %al
     jnz not_ready
 
     movw %di, %ax
@@ -117,6 +121,7 @@ go_on_read:
     movw %ax, (%bx)
     addw $2, %bx
     loop go_on_read
+
     ret
 
 .org 510
