@@ -194,12 +194,12 @@ movl %eax, %cr0
 
 lgdt gdt_ptr
 
-ljmp $SELECTOR_CODE, enter_kernel
+ljmp $SELECTOR_CODE, $enter_kernel
 
 enter_kernel:
     call kernel_init
     movl $0xc009f000, %esp
-    jmp $KERNEL_ENTRY_POINT
+    jmp KERNEL_ENTRY_POINT
 
 
 // 0x70000处的kernel.bin解析到虚拟地址0xc0001500
