@@ -178,9 +178,9 @@ call setup_page
 //从GDT寄存器把值写回gdt_ptr内存处，为了是修改它并重新加载
 sgdt gdt_ptr
 
-movl (gdt_ptr+2), %ebx
+movl gdt_ptr+2, %ebx
 orl $0xc0000000, 0x1c(%ebx)
-addl $0xc0000000, (gdt_ptr+2)
+addl $0xc0000000, gdt_ptr+2
 
 addl $0xc0000000, %esp
 
