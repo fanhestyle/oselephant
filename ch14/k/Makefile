@@ -1,0 +1,124 @@
+LDFLAGS=-m elf_i386
+ASFLAGS=--32 -Iinclude
+CC=gcc
+CFLAGS=-m32 -Iinclude -fno-builtin -W -Wstrict-prototypes -Wmissing-prototypes  -fno-stack-protector -c -o
+
+
+
+OBJS=main.o kernel.o interrupt.o init.o print.o timer.o debug.o string.o bitmap.o memory.o thread.o list.o switch.o sync.o console.o keyboard.o ioqueue.o tss.o process.o syscall.o syscall-init.o stdio.o stdio-kernel.o ide.o fs.o dir.o file.o inode.o
+
+kernel.bin:$(OBJS)
+	@ld $(LDFLAGS) -T src/kernel.lds -e main -o $@ $^
+
+main.o:	src/main.c
+	@$(CC) $(CFLAGS) $@ $^
+
+print.o: src/print.s
+	@as $(ASFLAGS) $^ -o $@
+
+timer.o: src/timer.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+debug.o: src/debug.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+string.o: src/string.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+bitmap.o: src/bitmap.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+thread.o: src/thread.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+list.o: src/list.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+keyboard.o: src/keyboard.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+ioqueue.o: src/ioqueue.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+tss.o: src/tss.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+init.o: src/init.c
+	@$(CC) $(CFLAGS) $@ $^
+
+interrupt.o: src/interrupt.c
+	@$(CC) $(CFLAGS) $@ $^
+
+memory.o:	src/memory.c
+	@$(CC) $(CFLAGS) $@ $^
+
+sync.o:	src/sync.c
+	@$(CC) $(CFLAGS) $@ $^
+
+console.o:	src/console.c
+	@$(CC) $(CFLAGS) $@ $^
+
+process.o:	src/process.c
+	@$(CC) $(CFLAGS) $@ $^
+
+stdio.o:	src/stdio.c
+	@$(CC) $(CFLAGS) $@ $^
+
+syscall.o:	src/syscall.c
+	@$(CC) $(CFLAGS) $@ $^
+
+syscall-init.o:	src/syscall-init.c
+	@$(CC) $(CFLAGS) $@ $^
+
+stdio-kernel.o:	src/stdio-kernel.c
+	@$(CC) $(CFLAGS) $@ $^
+
+ide.o:	src/ide.c
+	@$(CC) $(CFLAGS) $@ $^
+
+dir.o:	src/dir.c
+	@$(CC) $(CFLAGS) $@ $^
+
+file.o:	src/file.c
+	@$(CC) $(CFLAGS) $@ $^
+
+fs.o:	src/fs.c
+	@$(CC) $(CFLAGS) $@ $^
+
+inode.o:	src/inode.c
+	@$(CC) $(CFLAGS) $@ $^
+
+kernel.o: src/kernel.s
+	@as $(ASFLAGS) $^ -o $@
+
+switch.o: src/switch.s
+	@as $(ASFLAGS) $^ -o $@
+
+.PHONY:clean,all,loader,mbr,test,min
+
+mbr:
+	@as $(ASFLAGS) src/mbr.s -o mbr.o
+	@ld $(LDFLAGS) -T src/linker.lds mbr.o -o mbr.bin
+
+loader:
+	@as $(ASFLAGS) src/loader.s -o loader.o
+	@ld $(LDFLAGS) -T src/loaderlinker.lds  loader.o -o loader.bin
+
+all:
+	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q hd60M.img
+	@dd if=mbr.bin of=hd60M.img conv=notrunc
+	@dd if=loader.bin of=hd60M.img seek=2 bs=512 conv=notrunc
+	@dd if=kernel.bin of=hd60M.img seek=9 bs=512 count=200 conv=notrunc
+
+clean:
+	@$(RM) -rf *.map *.o *.bin hd60M.img *.ini *.txt *.lock kernel/*.bin kernel/*.o
+
+test:
+	make clean && make && make mbr && make loader && make all && bochs
+
+min:
+	make && make mbr && make loader && make all && bochs
+
+disk:
+	@bximage -mode="create" -hd=80M -imgmode="flat" -sectsize=512 -q hd.img	
+

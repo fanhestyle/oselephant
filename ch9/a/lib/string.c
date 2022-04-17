@@ -113,6 +113,3 @@ uint32_t strchrs(const char* str, uint8_t ch) {
    }
    return ch_cnt;
 }
-
-
-

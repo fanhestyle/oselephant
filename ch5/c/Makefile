@@ -1,30 +1,38 @@
-CFLAGS=-m32 -c -o
+LDFLAGS=-T linker.lds -m elf_i386
+ASFLAGS=--32 -I include
 CC=gcc
+CFLAGS=-m32 -c -o
 
-LDFLAGS=-T boot/mbr.lds -m elf_i386
-ASFLAGS=--32 -I boot/include
-
-kernel.bin: main.o
+kernel.bin:main.o
 	@ld main.o -m elf_i386 -T kernel/kernel.lds -e main -o kernel.bin
 
 main.o:	kernel/main.c
-	@$(CC) $(CFLAGS) main.o kernel/main.c  
+	@$(CC) $(CFLAGS) main.o kernel/main.c
 
-.PHONY: clean,mbr,loader
+mbr.bin: mbr.o
+	@ld $(LDFLAGS) $^ -o $@
 
-clean:
-	@$(RM) -rf *.o kernel/*.bin  *.bin *.o kernel/*.o *.img *.ini *.txt *.lock
+mbr.o: mbr.s
+	@as $(ASFLAGS) $^ -o $@
+
+.PHONY:clean,all,loader,mbr,test
 
 mbr:
-	@as $(ASFLAGS) boot/mbr.asm -o mbr.o
+	@as $(ASFLAGS) mbr.s -o mbr.o
 	@ld $(LDFLAGS) mbr.o -o mbr.bin
 
 loader:
-	@as $(ASFLAGS) boot/loader.asm -o loader.o
-	@ld -T boot/loader.lds -m elf_i386 loader.o -o loader.bin
+	@as $(ASFLAGS) loader.s -o loader.o
+	@ld -T loaderlinker.lds -m elf_i386 loader.o -o loader.bin
 
 all:
-	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q boot.img
-	@dd if=mbr.bin of=boot.img conv=notrunc
-	@dd if=loader.bin of=boot.img seek=2 bs=512 conv=notrunc
-	@dd if=kernel.bin of=boot.img seek=9 bs=512 count=200 conv=notrunc
+	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q hd60M.img
+	@dd if=mbr.bin of=hd60M.img conv=notrunc
+	@dd if=loader.bin of=hd60M.img seek=2 bs=512 conv=notrunc
+	@dd if=kernel.bin of=hd60M.img seek=9 bs=512 count=200 conv=notrunc
+
+clean:
+	@$(RM) -rf *.o *.bin *.img *.ini *.txt *.lock kernel/*.bin kernel/*.o
+
+test:
+	make clean && make && make mbr && make loader && make all && bochs

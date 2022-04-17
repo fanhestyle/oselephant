@@ -1,8 +1,10 @@
-*.bin
-*.img
-*.o
 *.txt
-*.ini
+*.img
 *.out
-*.lock
+*.o 
+*.bin
+*.ini
+*.lock 
+*.bin
+.vscode/
 

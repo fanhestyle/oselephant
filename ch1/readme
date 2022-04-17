@@ -1,0 +1,16 @@
+/*
+搭建开发环境
+Setup Dev Environment
+
+test paltform：
+
+Ubuntu 20.04 Amd64
+Necessary Tools:
+
+GNU AS
+GNU LD
+GNU GCC
+objdump
+hexdump
+
+*/

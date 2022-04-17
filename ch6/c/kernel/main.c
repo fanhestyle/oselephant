@@ -1,6 +1,6 @@
 #include "print.h"
 
-void main(void)
+void main(void) 
 {
    put_str("I am kernel\n");
    put_int(0);

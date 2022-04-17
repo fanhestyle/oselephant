@@ -1,47 +1,54 @@
-OBJS=main.o kernel.o print.o timer.o debug.o init.o interrupt.o 
+LDFLAGS=-m elf_i386
+ASFLAGS=--32 -Iinclude
+CC=gcc
+CFLAGS=-m32 -Iinclude  -fno-stack-protector -c -o
 
-kernel.bin: $(OBJS)
-	@ld $^  -m elf_i386 -Ttext 0xc0001500 -e main -o kernel.bin
+kernel.bin:main.o kernel.o interrupt.o init.o print.o timer.o debug.o string.o
+	@ld $(LDFLAGS) -T kernel/kernel.lds -e main -o $@ $^
 
-print.o: lib/kernel/print.s
-	@nasm -f elf -o print.o lib/kernel/print.s
+main.o:	kernel/main.c
+	@$(CC) $(CFLAGS) $@ $^
+
+print.o: lib/print.s
+	@as $(ASFLAGS) $^ -o $@
+
+timer.o: lib/timer.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+debug.o: lib/debug.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+string.o: lib/string.c
+	@$(CC) $(CFLAGS) $@ $^	
+
+init.o: kernel/init.c
+	@$(CC) $(CFLAGS) $@ $^
+
+interrupt.o: kernel/interrupt.c
+	@$(CC) $(CFLAGS) $@ $^
 
 kernel.o: kernel/kernel.s
-	@nasm -f elf  -o kernel.o $^
+	@as $(ASFLAGS) $^ -o $@
 
-timer.o: device/timer.c
-	@gcc -m32 -Ilib/kernel $^ -c  -fno-stack-protector -o $@	
 
-debug.o: kernel/debug.c
-	@gcc -m32 -Ilib/kernel $^ -c -fno-stack-protector -o $@
-init.o: kernel/init.c
-	@gcc -m32 -Ilib/kernel kernel/init.c -c  -fno-stack-protector -o init.o
-
-interrupt.o:  kernel/interrupt.c
-	@gcc -m32 -Ilib/kernel kernel/interrupt.c -c -fno-stack-protector -o interrupt.o
-
-main.o: kernel/main.c
-	@gcc -m32 -Ilib/kernel -c -fno-stack-protector -o $@ $^
-
-.PHONY:clean, mbr, loader, all, build
-
-clean:
-	@rm -rf *.bin *.o *.txt *.lock *.ini *.img
+.PHONY:clean,all,loader,mbr,test
 
 mbr:
-	@nasm -f bin -I ./boot/include/ -o mbr.bin ./boot/mbr.s
+	@as $(ASFLAGS) boot/mbr.s -o mbr.o
+	@ld $(LDFLAGS) -T boot/linker.lds mbr.o -o mbr.bin
 
 loader:
-	@nasm -f bin -I ./boot/include/ -o loader.bin ./boot/loader.s
+	@as $(ASFLAGS) boot/loader.s -o loader.o
+	@ld $(LDFLAGS) -T boot/loaderlinker.lds  loader.o -o loader.bin
 
 all:
-	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q boot.img
-	@dd if=mbr.bin of=boot.img conv=notrunc
-	@dd if=loader.bin of=boot.img seek=2 bs=512 conv=notrunc
-	@dd if=kernel.bin of=boot.img seek=9 bs=512 count=200 conv=notrunc
+	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q hd60M.img
+	@dd if=mbr.bin of=hd60M.img conv=notrunc
+	@dd if=loader.bin of=hd60M.img seek=2 bs=512 conv=notrunc
+	@dd if=kernel.bin of=hd60M.img seek=9 bs=512 count=200 conv=notrunc
 
-build:
-	@make clean && make && make mbr && make loader && make all && bochs
+clean:
+	@$(RM) -rf *.o *.bin *.img *.ini *.txt *.lock kernel/*.bin kernel/*.o
 
-
-
+test:
+	make clean && make && make mbr && make loader && make all && bochs

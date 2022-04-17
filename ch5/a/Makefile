@@ -4,19 +4,22 @@ ASFLAGS=--32 -I include
 mbr.bin: mbr.o
 	@ld $(LDFLAGS) $^ -o $@
 
-mbr.o: mbr.asm
+mbr.o: mbr.s
 	@as $(ASFLAGS) $^ -o $@
 
-.PHONY:clean,all,loader
+.PHONY:clean,all,loader,test
 
 loader:
-	@as $(ASFLAGS) loader.asm -o loader.o
+	@as $(ASFLAGS) loader.s -o loader.o
 	@ld -T loaderlinker.lds -m elf_i386 loader.o -o loader.bin
 
 all:
-	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q boot.img
-	@dd if=mbr.bin of=boot.img conv=notrunc
-	@dd if=loader.bin of=boot.img seek=2 bs=512 conv=notrunc
+	@bximage -mode="create" -hd=60M -imgmode="flat" -sectsize=512 -q hd60M.img
+	@dd if=mbr.bin of=hd60M.img conv=notrunc
+	@dd if=loader.bin of=hd60M.img seek=2 bs=512 conv=notrunc
 
 clean:
 	@$(RM) -rf *.o *.bin *.img *.ini *.txt *.lock
+
+test:
+	make clean && make && make loader && make all && bochs

@@ -2,6 +2,8 @@
 #include "global.h"
 #include "debug.h"
 
+#define NULL 0
+
 /* 将dst_起始的size个字节置为value */
 void memset(void* dst_, uint8_t value, uint32_t size) {
    ASSERT(dst_ != NULL);
@@ -111,6 +113,3 @@ uint32_t strchrs(const char* str, uint8_t ch) {
    }
    return ch_cnt;
 }
-
-
-

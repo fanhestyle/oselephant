@@ -1,126 +1,128 @@
-;Ö÷Òýµ¼³ÌÐò 
-;------------------------------------------------------------
-%include "boot.inc"
-SECTION MBR vstart=0x7c00         
-   mov ax,cs      
-   mov ds,ax
-   mov es,ax
-   mov ss,ax
-   mov fs,ax
-   mov sp,0x7c00
-   mov ax,0xb800
-   mov gs,ax
+.code16
 
-; ÇåÆÁ
-;ÀûÓÃ0x06ºÅ¹¦ÄÜ£¬ÉÏ¾íÈ«²¿ÐÐ£¬Ôò¿ÉÇåÆÁ¡£
-; -----------------------------------------------------------
-;INT 0x10   ¹¦ÄÜºÅ:0x06	   ¹¦ÄÜÃèÊö:ÉÏ¾í´°¿Ú
-;------------------------------------------------------
-;ÊäÈë£º
-;AH ¹¦ÄÜºÅ= 0x06
-;AL = ÉÏ¾íµÄÐÐÊý(Èç¹ûÎª0,±íÊ¾È«²¿)
-;BH = ÉÏ¾íÐÐÊôÐÔ
-;(CL,CH) = ´°¿Ú×óÉÏ½ÇµÄ(X,Y)Î»ÖÃ
-;(DL,DH) = ´°¿ÚÓÒÏÂ½ÇµÄ(X,Y)Î»ÖÃ
-;ÎÞ·µ»ØÖµ£º
-   mov     ax, 0600h
-   mov     bx, 0700h
-   mov     cx, 0                   ; ×óÉÏ½Ç: (0, 0)
-   mov     dx, 184fh		   ; ÓÒÏÂ½Ç: (80,25),
-				   ; ÒòÎªVGAÎÄ±¾Ä£Ê½ÖÐ£¬Ò»ÐÐÖ»ÄÜÈÝÄÉ80¸ö×Ö·û,¹²25ÐÐ¡£
-				   ; ÏÂ±ê´Ó0¿ªÊ¼£¬ËùÒÔ0x18=24,0x4f=79
-   int     10h                     ; int 10h
+.include "boot.inc"
 
-   ; Êä³ö×Ö·û´®:MBR
-   mov byte [gs:0x00],'1'
-   mov byte [gs:0x01],0xA4
+movw %cs, %ax
+movw %ax, %ds
+movw %ax, %es
+movw %ax, %ss
+movw %ax, %fs
+movw $0x7c00, %sp
+movw $0xb800, %ax
+movw %ax, %gs
 
-   mov byte [gs:0x02],' '
-   mov byte [gs:0x03],0xA4
+//æ¸…å±
+movw $0x600, %ax
+movw $0x700, %bx
+movw $0, %cx
+movw $0x184f, %dx
+int $0x10
 
-   mov byte [gs:0x04],'M'
-   mov byte [gs:0x05],0xA4	   ;A±íÊ¾ÂÌÉ«±³¾°ÉÁË¸£¬4±íÊ¾Ç°¾°É«ÎªºìÉ«
+movb $'1', %gs:0x0
+movb $0xA4, %gs:0x1
+movb $' ', %gs:0x2
+movb $0xA4, %gs:0x3
+movb $'M', %gs:0x4
+movb $0xA4, %gs:0x5
+movb $'B', %gs:0x6
+movb $0xA4, %gs:0x7
+movb $'R', %gs:0x8
+movb $0xA4, %gs:0x9
 
-   mov byte [gs:0x06],'B'
-   mov byte [gs:0x07],0xA4
 
-   mov byte [gs:0x08],'R'
-   mov byte [gs:0x09],0xA4
-	 
-   mov eax,LOADER_START_SECTOR	 ; ÆðÊ¼ÉÈÇølbaµØÖ·
-   mov bx,LOADER_BASE_ADDR       ; Ð´ÈëµÄµØÖ·
-   mov cx,4			 ; ´ý¶ÁÈëµÄÉÈÇøÊý
-   call rd_disk_m_16		 ; ÒÔÏÂ¶ÁÈ¡³ÌÐòµÄÆðÊ¼²¿·Ö£¨Ò»¸öÉÈÇø£©
-  
-   jmp LOADER_BASE_ADDR + 0x300
-       
-;-------------------------------------------------------------------------------
-;¹¦ÄÜ:¶ÁÈ¡Ó²ÅÌn¸öÉÈÇø
-rd_disk_m_16:	   
-;-------------------------------------------------------------------------------
-				       ; eax=LBAÉÈÇøºÅ
-				       ; ebx=½«Êý¾ÝÐ´ÈëµÄÄÚ´æµØÖ·
-				       ; ecx=¶ÁÈëµÄÉÈÇøÊý
-      mov esi,eax	  ;±¸·Ýeax
-      mov di,cx		  ;±¸·Ýcx
-;¶ÁÐ´Ó²ÅÌ:
-;µÚ1²½£ºÉèÖÃÒª¶ÁÈ¡µÄÉÈÇøÊý
-      mov dx,0x1f2
-      mov al,cl
-      out dx,al            ;¶ÁÈ¡µÄÉÈÇøÊý
+//å¼€å§‹è¯»ç£ç›˜ï¼ŒæŠŠbootloaderåŠ è½½åˆ°å†…å­˜ä¸­ LOADER_BASE_ADDR=0x900å¤„
+//eax:ç¡¬ç›˜æ‰‡åŒºå·
+//bx: æ‹·è´åˆ°çš„å†…å­˜åœ°å€
+//cx: æ‹·è´å¤šå°‘ä¸ªæ‰‡åŒº
 
-      mov eax,esi	   ;»Ö¸´ax
+movl $LOADER_START_SECTOR, %eax
+movw $LOADER_BASE_ADDR, %bx
+movw $0x4, %cx 
 
-;µÚ2²½£º½«LBAµØÖ·´æÈë0x1f3 ~ 0x1f6
+call rd_disk_m_16
 
-      ;LBAµØÖ·7~0Î»Ð´Èë¶Ë¿Ú0x1f3
-      mov dx,0x1f3                       
-      out dx,al                          
+jmp  LOADER_BASE_ADDR + 0x300
 
-      ;LBAµØÖ·15~8Î»Ð´Èë¶Ë¿Ú0x1f4
-      mov cl,8
-      shr eax,cl
-      mov dx,0x1f4
-      out dx,al
 
-      ;LBAµØÖ·23~16Î»Ð´Èë¶Ë¿Ú0x1f5
-      shr eax,cl
-      mov dx,0x1f5
-      out dx,al
+//åŠŸèƒ½ï¼šè¯»å–ç¡¬ç›˜çš„nä¸ªæ‰‡åŒº
+//eax=LBAæ‰‡åŒºå·
+//bx=å¾…å†™å…¥çš„å†…å­˜èµ·å§‹åœ°å€
+//cx=è¯»å…¥çš„æ‰‡åŒºæ•°
 
-      shr eax,cl
-      and al,0x0f	   ;lbaµÚ24~27Î»
-      or al,0xe0	   ; ÉèÖÃ7¡«4Î»Îª1110,±íÊ¾lbaÄ£Ê½
-      mov dx,0x1f6
-      out dx,al
+rd_disk_m_16:
+    movl %eax, %esi
+    movw %cx, %di
 
-;µÚ3²½£ºÏò0x1f7¶Ë¿ÚÐ´Èë¶ÁÃüÁî£¬0x20 
-      mov dx,0x1f7
-      mov al,0x20                        
-      out dx,al
 
-;µÚ4²½£º¼ì²âÓ²ÅÌ×´Ì¬
-  .not_ready:
-      ;Í¬Ò»¶Ë¿Ú£¬Ð´Ê±±íÊ¾Ð´ÈëÃüÁî×Ö£¬¶ÁÊ±±íÊ¾¶ÁÈëÓ²ÅÌ×´Ì¬
-      nop
-      in al,dx
-      and al,0x88	   ;µÚ4Î»Îª1±íÊ¾Ó²ÅÌ¿ØÖÆÆ÷ÒÑ×¼±¸ºÃÊý¾Ý´«Êä£¬µÚ7Î»Îª1±íÊ¾Ó²ÅÌÃ¦
-      cmp al,0x08
-      jnz .not_ready	   ;ÈôÎ´×¼±¸ºÃ£¬¼ÌÐøµÈ¡£
 
-;µÚ5²½£º´Ó0x1f0¶Ë¿Ú¶ÁÊý¾Ý
-      mov ax, di
-      mov dx, 256
-      mul dx
-      mov cx, ax	   ; diÎªÒª¶ÁÈ¡µÄÉÈÇøÊý£¬Ò»¸öÉÈÇøÓÐ512×Ö½Ú£¬Ã¿´Î¶ÁÈëÒ»¸ö×Ö£¬
-			   ; ¹²Ðèdi*512/2´Î£¬ËùÒÔdi*256
-      mov dx, 0x1f0
-  .go_on_read:
-      in ax,dx
-      mov [bx],ax
-      add bx,2		  
-      loop .go_on_read
-      ret
+//ç«¯å£0x1f2 ç»™å‡ºè¯»å–çš„æ‰‡åŒºæ•°
 
-   times 510-($-$$) db 0
-   db 0x55,0xaa
+    movw $0x1f2, %dx
+    movb %cl, %al
+    outb %al, %dx
+
+    movl %esi, %eax
+
+//0-7ä½å†™å…¥0x1f3ç«¯å£
+
+    movw $0x1f3, %dx
+    outb %al, %dx
+
+    movb $8, %cl
+    shr %cl, %eax
+    movw $0x1f4, %dx
+    outb %al, %dx
+
+
+//8-15ä½å†™å…¥0x1f4ç«¯å£
+
+    movb $8, %cl
+    shr %cl, %eax
+    movw $0x1f4, %dx
+    out %al, %dx
+
+
+
+// 16-23
+
+    shr %cl, %eax
+    movw $0x1f5, %dx
+    outb %al, %dx
+
+
+// 24-27
+
+    shr %cl, %eax
+    and $0x0f, %al
+    or $0xe0, %al
+    movw $0x1f6, %dx
+    out %al, %dx
+
+    movw $0x1f7, %dx
+    movb $0x20, %al
+    out %al, %dx
+
+not_ready:
+    nop
+    in %dx, %al
+    and $0x88, %al
+    cmp $0x8, %al
+    jnz not_ready
+
+    movw %di, %ax
+    movw $256, %dx
+    mul %dx
+    movw %ax, %cx
+
+    movw $0x1f0, %dx
+
+go_on_read:
+    in %dx, %ax
+    movw %ax, (%bx)
+    addw $2, %bx
+    loop go_on_read
+
+    ret
+
+.org 510
+.word 0xaa55
